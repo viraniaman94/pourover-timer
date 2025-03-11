@@ -397,10 +397,10 @@
         padding-bottom: 5px;
       }
 
-      .tick-adder-box .add-button {
-        position: absolute;
-        right: 15px;
-        bottom: 15px;
+      /* Modified: Removed the absolute positioning and added text-align for proper button placement */
+      .tick-adder-box .add-button-container {
+        margin-top: 10px;
+        text-align: right;
       }
 
       @media (max-width: 600px) {
@@ -987,8 +987,8 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                         <p>{presetDescription}</p>
                       ) : (
                         <p style={{ color: '#999' }}>
-                          No recipe details added. Click Edit Description to add equipment and
-                          dosing information.
+                          No recipe details added. Click Edit Description to ad No recipe details
+                          added. Click Edit Description to add equipment and dosing information.
                         </p>
                       )}
                       <button
@@ -1032,9 +1032,12 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                   />
                 </div>
 
-                <button onClick={handleAddTick} disabled={isRunning} className="add-button">
-                  Add
-                </button>
+                {/* Changed: Added a container div and moved the button below the inputs */}
+                <div className="add-button-container">
+                  <button onClick={handleAddTick} disabled={isRunning} className="add-button">
+                    Add
+                  </button>
+                </div>
               </div>
 
               <div className="tick-list">
