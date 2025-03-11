@@ -482,7 +482,7 @@
       function App() {
         const [totalDuration, setTotalDuration] = useState(180); // 3 minutes default
         const [ticks, setTicks] = useState([0]); // Start with t=0
-        const [tickDescriptions, setTickDescriptions] = useState({ 0: 'Start timer' });
+        const [tickDescriptions, setTickDescriptions] = useState({ 0: 'Get Ready...' });
         const [isRunning, setIsRunning] = useState(false);
         const [currentTime, setCurrentTime] = useState(0);
         const [newTickTime, setNewTickTime] = useState('');
@@ -624,7 +624,7 @@
 
           // Set initial instruction and next step
           if (currentTime === 0) {
-            setCurrentInstruction('Timer started');
+            setCurrentInstruction(tickDescriptions[0]);
             if (ticks.length > 1) {
               const nextTickTime = ticks[1];
               const action =
