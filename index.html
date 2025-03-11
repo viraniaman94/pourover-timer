@@ -187,6 +187,7 @@
         background-color: #2e7d32;
         padding: 5px 10px;
         font-size: 0.8rem;
+        margin-right: 8px; /* Added space between edit and delete buttons */
       }
 
       .save-btn {
@@ -379,6 +380,29 @@
         margin: 10px 0;
       }
 
+      /* New styles for tick adder box */
+      .tick-adder-box {
+        background-color: white;
+        border-radius: 8px;
+        border: 1px solid var(--secondary);
+        padding: 15px;
+        margin-bottom: 20px;
+        position: relative;
+      }
+
+      .tick-adder-box h3 {
+        color: var(--primary);
+        margin-bottom: 10px;
+        border-bottom: 1px solid var(--accent);
+        padding-bottom: 5px;
+      }
+
+      .tick-adder-box .add-button {
+        position: absolute;
+        right: 15px;
+        bottom: 15px;
+      }
+
       @media (max-width: 600px) {
         .input-group {
           flex-direction: column;
@@ -477,6 +501,7 @@
         const [savedPresets, setSavedPresets] = useState([]);
         const [showSaveModal, setShowSaveModal] = useState(false);
         const [showManageModal, setShowManageModal] = useState(false);
+        const [showLoadModal, setShowLoadModal] = useState(false); // New state for load modal
         const [newPresetName, setNewPresetName] = useState('');
         const [renamingPreset, setRenamingPreset] = useState(null);
         const [newPresetNameForRename, setNewPresetNameForRename] = useState('');
@@ -760,6 +785,11 @@ This pulse pour technique helps maintain an even extraction by periodically addi
           setRenamingPreset(null);
         };
 
+        // New function to open load presets modal
+        const openLoadPresetsModal = () => {
+          setShowLoadModal(true);
+        };
+
         const handleSavePreset = () => {
           if (!newPresetName.trim()) {
             alert('Please enter a name for your preset');
@@ -813,7 +843,7 @@ This pulse pour technique helps maintain an even extraction by periodically addi
           setTotalDuration(preset.totalDuration);
           setPresetDescription(preset.description || '');
           setPresetLoaded(true);
-          setShowManageModal(false);
+          setShowLoadModal(false);
         };
 
         const handleDeletePreset = (presetName) => {
@@ -868,6 +898,9 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                 <button onClick={handlePresetPulsePourover} disabled={isRunning || presetLoaded}>
                   Load JH One Cup V60 Preset
                 </button>
+                <button onClick={openLoadPresetsModal} disabled={isRunning}>
+                  Load Saved Recipe
+                </button>
                 <button onClick={openSavePresetModal} disabled={isRunning}>
                   Save Recipe as Preset
                 </button>
@@ -881,6 +914,18 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                 )}
               </div>
 
+              <div className="input-group">
+                <label htmlFor="duration">Total Duration:</label>
+                <input
+                  id="duration"
+                  type="text"
+                  value={formatTime(totalDuration)}
+                  onChange={handleTotalDurationChange}
+                  disabled={isRunning}
+                />
+              </div>
+
+              {/* Recipe details moved up */}
               {presetDescription && (
                 <div className="description-box">
                   <h3>Preparation Details</h3>
@@ -915,45 +960,6 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                   )}
                 </div>
               )}
-
-              <div className="input-group">
-                <label htmlFor="duration">Total Duration:</label>
-                <input
-                  id="duration"
-                  type="text"
-                  value={formatTime(totalDuration)}
-                  onChange={handleTotalDurationChange}
-                  disabled={isRunning}
-                />
-              </div>
-
-              <div className="input-group">
-                <label htmlFor="new-tick">Add Tick At:</label>
-                <input
-                  id="new-tick"
-                  type="text"
-                  value={newTickTime}
-                  onChange={(e) => setNewTickTime(e.target.value)}
-                  placeholder="Time (e.g., 45, 1:30, 1.5)"
-                  disabled={isRunning}
-                />
-                <button onClick={handleAddTick} disabled={isRunning}>
-                  Add
-                </button>
-              </div>
-
-              <div className="input-group">
-                <label htmlFor="new-tick-description">Description:</label>
-                <input
-                  id="new-tick-description"
-                  type="text"
-                  value={newTickDescription}
-                  onChange={(e) => setNewTickDescription(e.target.value)}
-                  placeholder="What to do at this tick"
-                  disabled={isRunning}
-                  style={{ width: '100%' }}
-                />
-              </div>
 
               {!presetDescription && !presetLoaded && (
                 <div className="description-box">
@@ -997,6 +1003,39 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                   )}
                 </div>
               )}
+
+              {/* Tick adder in a visually separate box */}
+              <div className="tick-adder-box">
+                <h3>Add New Tick Point</h3>
+                <div className="input-group">
+                  <label htmlFor="new-tick">Tick At:</label>
+                  <input
+                    id="new-tick"
+                    type="text"
+                    value={newTickTime}
+                    onChange={(e) => setNewTickTime(e.target.value)}
+                    placeholder="Time (e.g., 45, 1:30, 1.5)"
+                    disabled={isRunning}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label htmlFor="new-tick-description">Description:</label>
+                  <input
+                    id="new-tick-description"
+                    type="text"
+                    value={newTickDescription}
+                    onChange={(e) => setNewTickDescription(e.target.value)}
+                    placeholder="What to do at this tick"
+                    disabled={isRunning}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <button onClick={handleAddTick} disabled={isRunning} className="add-button">
+                  Add
+                </button>
+              </div>
 
               <div className="tick-list">
                 <h3>Tick Points:</h3>
@@ -1115,6 +1154,38 @@ This pulse pour technique helps maintain an even extraction by periodically addi
               </div>
             </Modal>
 
+            {/* Load Presets Modal */}
+            <Modal
+              isOpen={showLoadModal}
+              onClose={() => setShowLoadModal(false)}
+              title="Load Saved Recipe"
+            >
+              <div>
+                {savedPresets.length === 0 ? (
+                  <p>
+                    You don't have any saved presets yet. Create a timer setup and save it as a
+                    preset.
+                  </p>
+                ) : (
+                  <div className="preset-list">
+                    {savedPresets.map((preset) => (
+                      <div key={preset.name} className="preset-item">
+                        <div className="preset-name">{preset.name}</div>
+                        <div className="preset-action-buttons">
+                          <button className="btn-load" onClick={() => handleLoadPreset(preset)}>
+                            Load
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="modal-footer">
+                  <button onClick={() => setShowLoadModal(false)}>Close</button>
+                </div>
+              </div>
+            </Modal>
+
             {/* Manage Presets Modal */}
             <Modal
               isOpen={showManageModal}
@@ -1156,9 +1227,6 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                             </>
                           ) : (
                             <>
-                              <button className="btn-load" onClick={() => handleLoadPreset(preset)}>
-                                Load
-                              </button>
                               <button
                                 className="btn-rename"
                                 onClick={() => startRenamePreset(preset)}
