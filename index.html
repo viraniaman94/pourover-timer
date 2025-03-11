@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom Pourover Coffee Timer</title>
+    <!-- React and ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      :root {
+        --primary: #6d4c41;
+        --secondary: #a1887f;
+        --accent: #d7ccc8;
+        --background: #efebe9;
+        --text: #3e2723;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background-color: var(--background);
+        color: var(--text);
+        padding: 20px;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        color: var(--primary);
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 2rem;
+      }
+
+      .timer-display {
+        font-size: 3rem;
+        text-align: center;
+        margin: 20px 0;
+        font-weight: bold;
+        color: var(--primary);
+        font-family: monospace;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.3s;
+      }
+
+      button:hover {
+        background-color: var(--secondary);
+      }
+
+      button:disabled {
+        background-color: var(--accent);
+        cursor: not-allowed;
+      }
+
+      .setup-section {
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: var(--accent);
+        border-radius: 8px;
+      }
+
+      .input-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        align-items: center;
+      }
+
+      input {
+        padding: 8px;
+        border: 1px solid var(--secondary);
+        border-radius: 4px;
+        font-size: 1rem;
+      }
+
+      textarea {
+        padding: 8px;
+        border: 1px solid var(--secondary);
+        border-radius: 4px;
+        font-size: 1rem;
+        width: 100%;
+        min-height: 100px;
+        resize: vertical;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .description-box {
+        margin: 15px 0;
+        padding: 15px;
+        background-color: white;
+        border-radius: 8px;
+        border: 1px solid var(--secondary);
+      }
+
+      .description-box h3 {
+        margin-bottom: 10px;
+        color: var(--primary);
+        border-bottom: 1px solid var(--accent);
+        padding-bottom: 5px;
+      }
+
+      .description-box p {
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      label {
+        font-weight: bold;
+        min-width: 120px;
+      }
+
+      .tick-list {
+        margin-top: 20px;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid var(--accent);
+        border-radius: 4px;
+        padding: 10px;
+      }
+
+      .tick-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+        border-bottom: 1px solid var(--accent);
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .tick-item:last-child {
+        border-bottom: none;
+      }
+
+      .tick-time {
+        font-weight: bold;
+        min-width: 60px;
+      }
+
+      .tick-description {
+        flex-grow: 1;
+      }
+
+      .tick-description input {
+        width: 100%;
+      }
+
+      .delete-btn {
+        background-color: #c62828;
+        padding: 5px 10px;
+        font-size: 0.8rem;
+      }
+
+      .edit-btn {
+        background-color: #2e7d32;
+        padding: 5px 10px;
+        font-size: 0.8rem;
+      }
+
+      .save-btn {
+        background-color: #1565c0;
+        padding: 5px 10px;
+        font-size: 0.8rem;
+      }
+
+      .progress-bar {
+        height: 10px;
+        background-color: var(--accent);
+        border-radius: 5px;
+        margin: 20px 0;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background-color: var(--primary);
+        width: 0%;
+        transition: width 0.3s linear;
+      }
+
+      .tick-markers {
+        position: relative;
+        height: 30px;
+        margin: 10px 0;
+        background-color: var(--accent);
+        border-radius: 5px;
+      }
+
+      .tick-marker {
+        position: absolute;
+        width: 2px;
+        height: 100%;
+        background-color: var(--primary);
+        transform: translateX(-50%);
+      }
+
+      .current-tick {
+        background-color: #c62828;
+        width: 4px;
+      }
+
+      .current-instruction {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #e6f7ff;
+        border-radius: 8px;
+        border-left: 4px solid #1890ff;
+        font-size: 1.2rem;
+      }
+
+      .current-instruction h3 {
+        margin-bottom: 10px;
+        color: #1890ff;
+      }
+
+      .next-step {
+        margin-top: 10px;
+        padding: 15px;
+        background-color: #fff7e6;
+        border-radius: 8px;
+        border-left: 4px solid #fa8c16;
+      }
+
+      .next-step h3 {
+        margin-bottom: 10px;
+        color: #fa8c16;
+      }
+
+      .preset-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+
+      .clear-btn {
+        background-color: #f57c00;
+      }
+
+      @media (max-width: 600px) {
+        .input-group {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .controls {
+          flex-direction: column;
+        }
+
+        .timer-display {
+          font-size: 2.5rem;
+        }
+
+        .tick-item {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useRef } = React;
+
+      function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+      }
+
+      function parseTimeInput(input) {
+        // Handle different formats: seconds, mm:ss, or decimal minutes
+        if (input.includes(':')) {
+          const [mins, secs] = input.split(':').map((num) => parseInt(num, 10));
+          return mins * 60 + secs;
+        } else if (input.includes('.')) {
+          // Treat as decimal minutes
+          return Math.round(parseFloat(input) * 60);
+        } else {
+          // Treat as seconds
+          return parseInt(input, 10);
+        }
+      }
+
+      function App() {
+        const [totalDuration, setTotalDuration] = useState(180); // 3 minutes default
+        const [ticks, setTicks] = useState([0]); // Start with t=0
+        const [tickDescriptions, setTickDescriptions] = useState({ 0: 'Start timer' });
+        const [isRunning, setIsRunning] = useState(false);
+        const [currentTime, setCurrentTime] = useState(0);
+        const [newTickTime, setNewTickTime] = useState('');
+        const [newTickDescription, setNewTickDescription] = useState('');
+        const [lastTickIndex, setLastTickIndex] = useState(-1);
+        const [currentInstruction, setCurrentInstruction] = useState('');
+        const [nextStep, setNextStep] = useState('');
+        const [editingDescription, setEditingDescription] = useState(null);
+        const [tempDescription, setTempDescription] = useState('');
+        const [presetLoaded, setPresetLoaded] = useState(false);
+        const [presetDescription, setPresetDescription] = useState('');
+        const [editingPresetDescription, setEditingPresetDescription] = useState(false);
+        const [tempPresetDescription, setTempPresetDescription] = useState('');
+
+        const timerRef = useRef(null);
+        const audioRef = useRef(null);
+
+        useEffect(() => {
+          // Create audio context for tick sound
+          audioRef.current = new (window.AudioContext || window.webkitAudioContext)();
+
+          return () => {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+          };
+        }, []);
+
+        useEffect(() => {
+          if (isRunning) {
+            timerRef.current = setInterval(() => {
+              setCurrentTime((prevTime) => {
+                const newTime = prevTime + 0.1;
+
+                // Check if we've reached the end
+                if (newTime >= totalDuration) {
+                  clearInterval(timerRef.current);
+                  setIsRunning(false);
+                  return totalDuration;
+                }
+
+                // Check if we've hit a tick
+                const currentTickIndex = ticks.findIndex(
+                  (tick) => prevTime < tick && newTime >= tick,
+                );
+
+                if (currentTickIndex !== -1) {
+                  playTickSound();
+                  setLastTickIndex(currentTickIndex);
+                  
+                  // Set current instruction
+                  const tickTime = ticks[currentTickIndex];
+                  setCurrentInstruction(tickDescriptions[tickTime] || `Tick at ${formatTime(tickTime)}`);
+
+                  // Set next step message
+                  if (currentTickIndex < ticks.length - 1) {
+                    const nextTickTime = ticks[currentTickIndex + 1];
+                    const action = tickDescriptions[nextTickTime] || `Tick at ${formatTime(nextTickTime)}`;
+                    const timeUntilNext = nextTickTime - tickTime;
+                    setNextStep(`In ${timeUntilNext} seconds: ${action}`);
+                  } else {
+                    setNextStep('Complete! Your timer has finished.');
+                  }
+                }
+
+                return newTime;
+              });
+            }, 100); // Update every 100ms for smoother progress
+          } else if (timerRef.current) {
+            clearInterval(timerRef.current);
+          }
+
+          return () => {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+          };
+        }, [isRunning, totalDuration, ticks, tickDescriptions]);
+
+        const playTickSound = () => {
+          const oscillator = audioRef.current.createOscillator();
+          const gainNode = audioRef.current.createGain();
+
+          oscillator.type = 'sine';
+          oscillator.frequency.value = 800;
+          gainNode.gain.value = 0.5;
+
+          oscillator.connect(gainNode);
+          gainNode.connect(audioRef.current.destination);
+
+          oscillator.start();
+
+          // Stop after 200ms
+          setTimeout(() => {
+            oscillator.stop();
+          }, 200);
+        };
+
+        const handleStart = () => {
+          if (currentTime >= totalDuration) {
+            // Reset if we're at the end
+            setCurrentTime(0);
+            setLastTickIndex(-1);
+            setCurrentInstruction('');
+            setNextStep('');
+          }
+          
+          // Set initial instruction and next step
+          if (currentTime === 0) {
+            setCurrentInstruction('Timer started');
+            if (ticks.length > 1) {
+              const nextTickTime = ticks[1];
+              const action = tickDescriptions[nextTickTime] || `Tick at ${formatTime(nextTickTime)}`;
+              const timeUntilNext = nextTickTime - ticks[0];
+              setNextStep(`In ${timeUntilNext} seconds: ${action}`);
+            }
+          }
+          
+          setIsRunning(true);
+        };
+
+        const handlePause = () => {
+          setIsRunning(false);
+        };
+
+        const handleReset = () => {
+          setIsRunning(false);
+          setCurrentTime(0);
+          setLastTickIndex(-1);
+          setCurrentInstruction('');
+          setNextStep('');
+        };
+
+        const handleAddTick = () => {
+          if (!newTickTime.trim()) return;
+
+          try {
+            const tickSeconds = parseTimeInput(newTickTime);
+
+            if (isNaN(tickSeconds) || tickSeconds < 0 || tickSeconds > totalDuration) {
+              alert(`Please enter a valid time between 0 and ${formatTime(totalDuration)}`);
+              return;
+            }
+
+            // Check if this tick already exists
+            if (ticks.includes(tickSeconds)) {
+              alert(`A tick at ${formatTime(tickSeconds)} already exists`);
+              return;
+            }
+
+            // Add tick and sort
+            const updatedTicks = [...ticks, tickSeconds].sort((a, b) => a - b);
+            
+            // Add description if provided
+            const updatedDescriptions = { ...tickDescriptions };
+            if (newTickDescription.trim()) {
+              updatedDescriptions[tickSeconds] = newTickDescription;
+            }
+            
+            setTicks(updatedTicks);
+            setTickDescriptions(updatedDescriptions);
+            setNewTickTime('');
+            setNewTickDescription('');
+          } catch (error) {
+            alert('Invalid time format. Use seconds, mm:ss, or decimal minutes.');
+          }
+        };
+
+        const handleRemoveTick = (index) => {
+          const tickToRemove = ticks[index];
+          const updatedTicks = ticks.filter((_, i) => i !== index);
+
+          // Also remove the description
+          const updatedDescriptions = { ...tickDescriptions };
+          delete updatedDescriptions[tickToRemove];
+
+          setTicks(updatedTicks);
+          setTickDescriptions(updatedDescriptions);
+        };
+
+        const handleTotalDurationChange = (e) => {
+          const input = e.target.value;
+          try {
+            const durationSeconds = parseTimeInput(input);
+            if (!isNaN(durationSeconds) && durationSeconds > 0) {
+              setTotalDuration(durationSeconds);
+            }
+          } catch (error) {
+            // Invalid input, don't update
+          }
+        };
+        
+        const handlePresetPulsePourover = () => {
+          // New preset for pulse pourover with specific instructions
+          const presetTicks = [0, 2, 47, 57, 67, 77, 87, 97, 107, 117, 127, 137];
+          
+          // Preset descriptions based on user's requirements
+          const presetDescriptions = {
+            0: 'Get ready...',
+            2: 'Start pouring, and bloom until next tick (wait for 45s, up to 50g water)',
+            47: 'Start pouring',
+            57: 'Stop pouring',
+            67: 'Start pouring (10s, up to 100g water total)',
+            77: 'Stop pouring',
+            87: 'Start pouring (10s, up to 150g water total)',
+            97: 'Stop pouring',
+            107: 'Start pouring (10s, up to 200g water total)',
+            117: 'Stop pouring',
+            127: 'Start pouring (10s, up to 250g water total)',
+            137: 'Stop pouring and let it draw down'
+          };
+          
+          // Preset overall description with equipment and dosing details
+          const description = 
+`EQUIPMENT:
+- Kettle with >=250g boiling water
+- 15g coffee (medium-fine grind)
+- Filter paper, rinsed with hot water
+- Pre-heated Hario V60
+
+INSTRUCTIONS:
+This pulse pour technique helps maintain an even extraction by periodically adding water in controlled amounts. Ensure your kettle is filled with enough hot water and all equipment is pre-heated for best results.`;
+
+          setTicks(presetTicks);
+          setTickDescriptions(presetDescriptions);
+          setPresetDescription(description);
+          setTotalDuration(180); // 3 minutes
+          setPresetLoaded(true);
+        };
+
+        const handleClearPreset = () => {
+          setTicks([0]);
+          setTickDescriptions({ 0: 'Start timer' });
+          setPresetDescription('');
+          setPresetLoaded(false);
+        };
+
+        const startEditDescription = (tick) => {
+          setEditingDescription(tick);
+          setTempDescription(tickDescriptions[tick] || '');
+        };
+
+        const saveDescription = (tick) => {
+          const updatedDescriptions = {
+            ...tickDescriptions,
+            [tick]: tempDescription,
+          };
+          setTickDescriptions(updatedDescriptions);
+          setEditingDescription(null);
+        };
+        
+        const startEditPresetDescription = () => {
+          setEditingPresetDescription(true);
+          setTempPresetDescription(presetDescription);
+        };
+        
+        const savePresetDescription = () => {
+          setPresetDescription(tempPresetDescription);
+          setEditingPresetDescription(false);
+        };
+
+        return (
+          <div className="container">
+            <h1>Pourover Coffee Timer</h1>
+
+            <div className="setup-section">
+              <h2>Timer Setup</h2>
+              
+              <div className="preset-buttons">
+                <button onClick={handlePresetPulsePourover} disabled={isRunning || presetLoaded}>
+                  Load Pulse Pourover Preset
+                </button>
+                {presetLoaded && (
+                  <button className="clear-btn" onClick={handleClearPreset} disabled={isRunning}>
+                    Clear Preset
+                  </button>
+                )}
+              </div>
+              
+              {presetDescription && (
+                <div className="description-box">
+                  <h3>Preparation Details</h3>
+                  {editingPresetDescription ? (
+                    <>
+                      <textarea 
+                        value={tempPresetDescription}
+                        onChange={(e) => setTempPresetDescription(e.target.value)}
+                        disabled={isRunning}
+                      />
+                      <button 
+                        className="save-btn" 
+                        onClick={savePresetDescription}
+                        disabled={isRunning}
+                        style={{ marginTop: '10px' }}
+                      >
+                        Save Description
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p>{presetDescription}</p>
+                      <button 
+                        className="edit-btn" 
+                        onClick={startEditPresetDescription}
+                        disabled={isRunning}
+                        style={{ marginTop: '10px' }}
+                      >
+                        Edit Description
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+              
+              <div className="input-group">
+                <label htmlFor="duration">Total Duration:</label>
+                <input
+                  id="duration"
+                  type="text"
+                  value={formatTime(totalDuration)}
+                  onChange={handleTotalDurationChange}
+                  disabled={isRunning}
+                />
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="new-tick">Add Tick At:</label>
+                <input
+                  id="new-tick"
+                  type="text"
+                  value={newTickTime}
+                  onChange={(e) => setNewTickTime(e.target.value)}
+                  placeholder="Time (e.g., 45, 1:30, 1.5)"
+                  disabled={isRunning}
+                />
+                <button onClick={handleAddTick} disabled={isRunning}>
+                  Add
+                </button>
+              </div>
+              
+              <div className="input-group">
+                <label htmlFor="new-tick-description">Description:</label>
+                <input
+                  id="new-tick-description"
+                  type="text"
+                  value={newTickDescription}
+                  onChange={(e) => setNewTickDescription(e.target.value)}
+                  placeholder="What to do at this tick"
+                  disabled={isRunning}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              
+              {!presetDescription && !presetLoaded && (
+                <div className="description-box">
+                  <h3>Recipe Details (Optional)</h3>
+                  {editingPresetDescription ? (
+                    <>
+                      <textarea 
+                        value={tempPresetDescription}
+                        onChange={(e) => setTempPresetDescription(e.target.value)}
+                        placeholder="Add equipment details, coffee dosage, and other preparation notes here."
+                        disabled={isRunning}
+                      />
+                      <button 
+                        className="save-btn" 
+                        onClick={savePresetDescription}
+                        disabled={isRunning}
+                        style={{ marginTop: '10px' }}
+                      >
+                        Save Description
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {presetDescription ? (
+                        <p>{presetDescription}</p>
+                      ) : (
+                        <p style={{color: "#999"}}>No recipe details added. Click Edit Description to add equipment and dosing information.</p>
+                      )}
+                      <button 
+                        className="edit-btn" 
+                        onClick={startEditPresetDescription}
+                        disabled={isRunning}
+                        style={{ marginTop: '10px' }}
+                      >
+                        Edit Description
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div className="tick-list">
+                <h3>Tick Points:</h3>
+                {ticks.map((tick, index) => (
+                  <div key={tick} className="tick-item">
+                    <div className="tick-time">{formatTime(tick)}</div>
+                    <div className="tick-description">
+                      {editingDescription === tick ? (
+                        <input
+                          type="text"
+                          value={tempDescription}
+                          onChange={(e) => setTempDescription(e.target.value)}
+                          placeholder="Enter description"
+                        />
+                      ) : (
+                        <span>{tickDescriptions[tick] || 'No description'}</span>
+                      )}
+                    </div>
+                    <div className="tick-actions">
+                      {editingDescription === tick ? (
+                        <button className="save-btn" onClick={() => saveDescription(tick)}>
+                          Save
+                        </button>
+                      ) : (
+                        <button
+                          className="edit-btn"
+                          onClick={() => startEditDescription(tick)}
+                          disabled={isRunning}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      <button
+                        className="delete-btn"
+                        onClick={() => handleRemoveTick(index)}
+                        disabled={isRunning || index === 0} // Don't allow removing t=0
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="timer-display">{formatTime(currentTime)}</div>
+
+            <div className="progress-bar">
+              <div
+                className="progress-fill"
+                style={{ width: `${(currentTime / totalDuration) * 100}%` }}
+              ></div>
+            </div>
+
+            <div className="tick-markers">
+              {ticks.map((tick, index) => (
+                <div
+                  key={tick}
+                  className={`tick-marker ${index === lastTickIndex ? 'current-tick' : ''}`}
+                  style={{ left: `${(tick / totalDuration) * 100}%` }}
+                  title={`${formatTime(tick)} - ${tickDescriptions[tick] || 'No description'}`}
+                ></div>
+              ))}
+            </div>
+
+            {currentInstruction && (
+              <div className="current-instruction">
+                <h3>Current Action:</h3>
+                <p>{currentInstruction}</p>
+              </div>
+            )}
+
+            {nextStep && (
+              <div className="next-step">
+                <h3>Next Step:</h3>
+                <p>{nextStep}</p>
+              </div>
+            )}
+
+            <div className="controls">
+              <button onClick={handleStart} disabled={isRunning}>
+                {currentTime > 0 && currentTime < totalDuration ? 'Resume' : 'Start'}
+              </button>
+              <button onClick={handlePause} disabled={!isRunning}>
+                Pause
+              </button>
+              <button onClick={handleReset}>Reset</button>
+            </div>
+          </div>
+        );
+      }
+
+      ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+  </body>
+</html>
