@@ -728,18 +728,66 @@
 
           // Preset overall description with equipment and dosing details
           const description = `EQUIPMENT:
-- Kettle with >=250g boiling water
-- 15g coffee (medium-fine grind)
-- Filter paper, rinsed with hot water
-- Pre-heated Hario V60
+      - Kettle with >=250g boiling water
+      - 15g coffee (medium-fine grind)
+      - Filter paper, rinsed with hot water
+      - Pre-heated Hario V60
 
-INSTRUCTIONS:
-This pulse pour technique helps maintain an even extraction by periodically adding water in controlled amounts. Ensure your kettle is filled with enough hot water and all equipment is pre-heated for best results.`;
+      INSTRUCTIONS:
+      This pulse pour technique helps maintain an even extraction by periodically adding water in controlled amounts. Ensure your kettle is filled with enough hot water and all equipment is pre-heated for best results.`;
 
           setTicks(presetTicks);
           setTickDescriptions(presetDescriptions);
           setPresetDescription(description);
           setTotalDuration(180); // 3 minutes
+          setPresetLoaded(true);
+        };
+
+        const handlePresetJHUltimateV60 = () => {
+          // James Hoffmann's Ultimate V60 technique
+          const presetTicks = [0, 45, 75, 105, 108, 115, 120, 210];
+
+          const presetDescriptions = {
+            0: 'Add 60g bloom water (2x coffee weight). Swirl until evenly mixed',
+            45: 'Add water to reach 300g total (add 240g) over next 30 seconds',
+            75: 'Add water to reach 500g total (add 200g) over next 30 seconds',
+            105: 'Stir 1x clockwise and 1x anticlockwise with spoon',
+            108: 'Allow to drain a little',
+            115: 'Give V60 a gentle swirl to flatten the bed',
+            120: 'Let brew drawdown (aim to finish by 3:30)',
+            210: 'Brew complete! Enjoy your coffee!',
+          };
+
+          const description = `THE ULTIMATE V60 TECHNIQUE - JAMES HOFFMANN
+
+      EQUIPMENT NEEDED:
+      - V60 dripper with filter paper (rinsed with hot water)
+      - 30g coffee (medium-fine grind)
+      - 500g water just off boil
+      - Timer
+      - Scale
+      - Spoon for stirring
+
+      BREWING RATIO: 60g/L (30g coffee to 500mL water)
+      GRIND: Medium-fine
+      WATER TEMPERATURE: As hot as possible (especially for light roasts)
+
+      PRE-BREWING STEPS:
+      - Rinse paper filter with water just off boil (removes paper taste and preheats brewer)
+      - Add coffee grounds and create a well in the middle
+      - Start timer at 0:00
+
+      TECHNIQUE NOTES:
+      - Full V60 maintains high temperature
+      - Pouring directly onto filter is fine
+      - Higher temperature = faster drawdown
+      - Filter paper choice affects drawdown time
+      - Swirling helps ensure flat coffee bed for even extraction`;
+
+          setTicks(presetTicks);
+          setTickDescriptions(presetDescriptions);
+          setPresetDescription(description);
+          setTotalDuration(240); // 4 minutes
           setPresetLoaded(true);
         };
 
@@ -897,6 +945,9 @@ This pulse pour technique helps maintain an even extraction by periodically addi
               <div className="preset-buttons">
                 <button onClick={handlePresetPulsePourover} disabled={isRunning || presetLoaded}>
                   Load JH One Cup V60 Preset
+                </button>
+                <button onClick={handlePresetJHUltimateV60} disabled={isRunning || presetLoaded}>
+                  Load JH Ultimate V60 Preset
                 </button>
                 <button onClick={openLoadPresetsModal} disabled={isRunning}>
                   Load Saved Recipe
