@@ -270,6 +270,115 @@
         background-color: #f57c00;
       }
 
+      /* New styles for preset management */
+      .preset-section {
+        margin-bottom: 15px;
+        background-color: white;
+        border-radius: 8px;
+        padding: 15px;
+        border: 1px solid var(--secondary);
+      }
+
+      .preset-list {
+        max-height: 200px;
+        overflow-y: auto;
+        margin: 10px 0;
+        border: 1px solid var(--accent);
+        border-radius: 4px;
+      }
+
+      .preset-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border-bottom: 1px solid var(--accent);
+        align-items: center;
+      }
+
+      .preset-item:last-child {
+        border-bottom: none;
+      }
+
+      .preset-name {
+        font-weight: bold;
+        flex-grow: 1;
+      }
+
+      .preset-action-buttons {
+        display: flex;
+        gap: 5px;
+      }
+
+      .preset-management {
+        margin-top: 15px;
+      }
+
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+
+      .modal {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--accent);
+        padding-bottom: 10px;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text);
+      }
+
+      .modal-content {
+        margin-bottom: 15px;
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 15px;
+        border-top: 1px solid var(--accent);
+        padding-top: 15px;
+      }
+
+      .btn-load {
+        background-color: #1976d2;
+      }
+
+      .btn-rename {
+        background-color: #7b1fa2;
+      }
+
+      .rename-input {
+        width: 100%;
+        margin: 10px 0;
+      }
+
       @media (max-width: 600px) {
         .input-group {
           flex-direction: column;
@@ -286,6 +395,17 @@
 
         .tick-item {
           flex-direction: column;
+        }
+
+        .preset-item {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+        }
+
+        .preset-action-buttons {
+          width: 100%;
+          justify-content: space-between;
         }
       }
     </style>
@@ -316,6 +436,25 @@
         }
       }
 
+      // Modal component for preset operations
+      function Modal({ isOpen, onClose, title, children }) {
+        if (!isOpen) return null;
+
+        return (
+          <div className="modal-overlay" onClick={onClose}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>{title}</h2>
+                <button className="modal-close" onClick={onClose}>
+                  &times;
+                </button>
+              </div>
+              <div className="modal-content">{children}</div>
+            </div>
+          </div>
+        );
+      }
+
       function App() {
         const [totalDuration, setTotalDuration] = useState(180); // 3 minutes default
         const [ticks, setTicks] = useState([0]); // Start with t=0
@@ -334,10 +473,29 @@
         const [editingPresetDescription, setEditingPresetDescription] = useState(false);
         const [tempPresetDescription, setTempPresetDescription] = useState('');
 
+        // New state for preset management
+        const [savedPresets, setSavedPresets] = useState([]);
+        const [showSaveModal, setShowSaveModal] = useState(false);
+        const [showManageModal, setShowManageModal] = useState(false);
+        const [newPresetName, setNewPresetName] = useState('');
+        const [renamingPreset, setRenamingPreset] = useState(null);
+        const [newPresetNameForRename, setNewPresetNameForRename] = useState('');
+
         const timerRef = useRef(null);
         const audioRef = useRef(null);
 
+        // Load saved presets from localStorage when component mounts
         useEffect(() => {
+          try {
+            const storedPresets = localStorage.getItem('coffeeTimerPresets');
+            if (storedPresets) {
+              setSavedPresets(JSON.parse(storedPresets));
+            }
+          } catch (error) {
+            console.error('Error loading presets from localStorage:', error);
+            // If there's an error, we'll just start with an empty array
+          }
+
           // Create audio context for tick sound
           audioRef.current = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -347,6 +505,15 @@
             }
           };
         }, []);
+
+        // Save presets to localStorage whenever they change
+        useEffect(() => {
+          try {
+            localStorage.setItem('coffeeTimerPresets', JSON.stringify(savedPresets));
+          } catch (error) {
+            console.error('Error saving presets to localStorage:', error);
+          }
+        }, [savedPresets]);
 
         useEffect(() => {
           if (isRunning) {
@@ -369,15 +536,18 @@
                 if (currentTickIndex !== -1) {
                   playTickSound();
                   setLastTickIndex(currentTickIndex);
-                  
+
                   // Set current instruction
                   const tickTime = ticks[currentTickIndex];
-                  setCurrentInstruction(tickDescriptions[tickTime] || `Tick at ${formatTime(tickTime)}`);
+                  setCurrentInstruction(
+                    tickDescriptions[tickTime] || `Tick at ${formatTime(tickTime)}`,
+                  );
 
                   // Set next step message
                   if (currentTickIndex < ticks.length - 1) {
                     const nextTickTime = ticks[currentTickIndex + 1];
-                    const action = tickDescriptions[nextTickTime] || `Tick at ${formatTime(nextTickTime)}`;
+                    const action =
+                      tickDescriptions[nextTickTime] || `Tick at ${formatTime(nextTickTime)}`;
                     const timeUntilNext = nextTickTime - tickTime;
                     setNextStep(`In ${timeUntilNext} seconds: ${action}`);
                   } else {
@@ -426,18 +596,19 @@
             setCurrentInstruction('');
             setNextStep('');
           }
-          
+
           // Set initial instruction and next step
           if (currentTime === 0) {
             setCurrentInstruction('Timer started');
             if (ticks.length > 1) {
               const nextTickTime = ticks[1];
-              const action = tickDescriptions[nextTickTime] || `Tick at ${formatTime(nextTickTime)}`;
+              const action =
+                tickDescriptions[nextTickTime] || `Tick at ${formatTime(nextTickTime)}`;
               const timeUntilNext = nextTickTime - ticks[0];
               setNextStep(`In ${timeUntilNext} seconds: ${action}`);
             }
           }
-          
+
           setIsRunning(true);
         };
 
@@ -472,13 +643,13 @@
 
             // Add tick and sort
             const updatedTicks = [...ticks, tickSeconds].sort((a, b) => a - b);
-            
+
             // Add description if provided
             const updatedDescriptions = { ...tickDescriptions };
             if (newTickDescription.trim()) {
               updatedDescriptions[tickSeconds] = newTickDescription;
             }
-            
+
             setTicks(updatedTicks);
             setTickDescriptions(updatedDescriptions);
             setNewTickTime('');
@@ -511,30 +682,27 @@
             // Invalid input, don't update
           }
         };
-        
+
         const handlePresetPulsePourover = () => {
           // New preset for pulse pourover with specific instructions
-          const presetTicks = [0, 2, 47, 57, 67, 77, 87, 97, 107, 117, 127, 137];
-          
+          const presetTicks = [0, 2, 47, 57, 67, 77, 87, 97, 107, 117];
+
           // Preset descriptions based on user's requirements
           const presetDescriptions = {
             0: 'Get ready...',
             2: 'Start pouring, and bloom until next tick (wait for 45s, up to 50g water)',
-            47: 'Start pouring',
+            47: 'Start pouring (10s, up to 100g water total)',
             57: 'Stop pouring',
-            67: 'Start pouring (10s, up to 100g water total)',
+            67: 'Start pouring (10s, up to 150g water total)',
             77: 'Stop pouring',
-            87: 'Start pouring (10s, up to 150g water total)',
+            87: 'Start pouring (10s, up to 200g water total)',
             97: 'Stop pouring',
-            107: 'Start pouring (10s, up to 200g water total)',
-            117: 'Stop pouring',
-            127: 'Start pouring (10s, up to 250g water total)',
-            137: 'Stop pouring and let it draw down'
+            107: 'Start pouring (10s, up to 250g water total)',
+            117: 'Stop pouring and let it draw down',
           };
-          
+
           // Preset overall description with equipment and dosing details
-          const description = 
-`EQUIPMENT:
+          const description = `EQUIPMENT:
 - Kettle with >=250g boiling water
 - 15g coffee (medium-fine grind)
 - Filter paper, rinsed with hot water
@@ -570,15 +738,125 @@ This pulse pour technique helps maintain an even extraction by periodically addi
           setTickDescriptions(updatedDescriptions);
           setEditingDescription(null);
         };
-        
+
         const startEditPresetDescription = () => {
           setEditingPresetDescription(true);
           setTempPresetDescription(presetDescription);
         };
-        
+
         const savePresetDescription = () => {
           setPresetDescription(tempPresetDescription);
           setEditingPresetDescription(false);
+        };
+
+        // New functions for preset management
+        const openSavePresetModal = () => {
+          setShowSaveModal(true);
+          setNewPresetName('My Coffee Recipe');
+        };
+
+        const openManagePresetsModal = () => {
+          setShowManageModal(true);
+          setRenamingPreset(null);
+        };
+
+        const handleSavePreset = () => {
+          if (!newPresetName.trim()) {
+            alert('Please enter a name for your preset');
+            return;
+          }
+
+          // Check if name already exists
+          if (savedPresets.some((preset) => preset.name === newPresetName)) {
+            const confirmOverwrite = window.confirm(
+              `A preset named "${newPresetName}" already exists. Do you want to overwrite it?`,
+            );
+
+            if (confirmOverwrite) {
+              // Remove the existing preset with this name
+              const filteredPresets = savedPresets.filter((p) => p.name !== newPresetName);
+
+              // Add the new preset
+              const newPreset = {
+                name: newPresetName,
+                ticks,
+                tickDescriptions,
+                totalDuration,
+                description: presetDescription,
+              };
+
+              setSavedPresets([...filteredPresets, newPreset]);
+            } else {
+              // User canceled overwrite
+              return;
+            }
+          } else {
+            // Create new preset
+            const newPreset = {
+              name: newPresetName,
+              ticks,
+              tickDescriptions,
+              totalDuration,
+              description: presetDescription,
+            };
+
+            setSavedPresets([...savedPresets, newPreset]);
+          }
+
+          setShowSaveModal(false);
+          alert(`Preset "${newPresetName}" saved successfully!`);
+        };
+
+        const handleLoadPreset = (preset) => {
+          setTicks(preset.ticks);
+          setTickDescriptions(preset.tickDescriptions);
+          setTotalDuration(preset.totalDuration);
+          setPresetDescription(preset.description || '');
+          setPresetLoaded(true);
+          setShowManageModal(false);
+        };
+
+        const handleDeletePreset = (presetName) => {
+          const confirmDelete = window.confirm(
+            `Are you sure you want to delete the preset "${presetName}"?`,
+          );
+
+          if (confirmDelete) {
+            const updatedPresets = savedPresets.filter((p) => p.name !== presetName);
+            setSavedPresets(updatedPresets);
+          }
+        };
+
+        const startRenamePreset = (preset) => {
+          setRenamingPreset(preset.name);
+          setNewPresetNameForRename(preset.name);
+        };
+
+        const saveRenamedPreset = () => {
+          if (!newPresetNameForRename.trim()) {
+            alert('Please enter a valid name');
+            return;
+          }
+
+          // Check if new name already exists (and it's not the same as original)
+          if (
+            newPresetNameForRename !== renamingPreset &&
+            savedPresets.some((p) => p.name === newPresetNameForRename)
+          ) {
+            alert('A preset with this name already exists. Please choose a different name.');
+            return;
+          }
+
+          // Update the preset name
+          const updatedPresets = savedPresets.map((p) => {
+            if (p.name === renamingPreset) {
+              return { ...p, name: newPresetNameForRename };
+            }
+            return p;
+          });
+
+          setSavedPresets(updatedPresets);
+          setRenamingPreset(null);
         };
 
         return (
@@ -586,11 +864,15 @@ This pulse pour technique helps maintain an even extraction by periodically addi
             <h1>Pourover Coffee Timer</h1>
 
             <div className="setup-section">
-              <h2>Timer Setup</h2>
-              
               <div className="preset-buttons">
                 <button onClick={handlePresetPulsePourover} disabled={isRunning || presetLoaded}>
-                  Load Pulse Pourover Preset
+                  Load JH One Cup V60 Preset
+                </button>
+                <button onClick={openSavePresetModal} disabled={isRunning}>
+                  Save Recipe as Preset
+                </button>
+                <button onClick={openManagePresetsModal} disabled={isRunning}>
+                  Manage Presets
                 </button>
                 {presetLoaded && (
                   <button className="clear-btn" onClick={handleClearPreset} disabled={isRunning}>
@@ -598,19 +880,19 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                   </button>
                 )}
               </div>
-              
+
               {presetDescription && (
                 <div className="description-box">
                   <h3>Preparation Details</h3>
                   {editingPresetDescription ? (
                     <>
-                      <textarea 
+                      <textarea
                         value={tempPresetDescription}
                         onChange={(e) => setTempPresetDescription(e.target.value)}
                         disabled={isRunning}
                       />
-                      <button 
-                        className="save-btn" 
+                      <button
+                        className="save-btn"
                         onClick={savePresetDescription}
                         disabled={isRunning}
                         style={{ marginTop: '10px' }}
@@ -621,8 +903,8 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                   ) : (
                     <>
                       <p>{presetDescription}</p>
-                      <button 
-                        className="edit-btn" 
+                      <button
+                        className="edit-btn"
                         onClick={startEditPresetDescription}
                         disabled={isRunning}
                         style={{ marginTop: '10px' }}
@@ -633,7 +915,7 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                   )}
                 </div>
               )}
-              
+
               <div className="input-group">
                 <label htmlFor="duration">Total Duration:</label>
                 <input
@@ -659,7 +941,7 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                   Add
                 </button>
               </div>
-              
+
               <div className="input-group">
                 <label htmlFor="new-tick-description">Description:</label>
                 <input
@@ -672,20 +954,20 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                   style={{ width: '100%' }}
                 />
               </div>
-              
+
               {!presetDescription && !presetLoaded && (
                 <div className="description-box">
                   <h3>Recipe Details (Optional)</h3>
                   {editingPresetDescription ? (
                     <>
-                      <textarea 
+                      <textarea
                         value={tempPresetDescription}
                         onChange={(e) => setTempPresetDescription(e.target.value)}
                         placeholder="Add equipment details, coffee dosage, and other preparation notes here."
                         disabled={isRunning}
                       />
-                      <button 
-                        className="save-btn" 
+                      <button
+                        className="save-btn"
                         onClick={savePresetDescription}
                         disabled={isRunning}
                         style={{ marginTop: '10px' }}
@@ -698,10 +980,13 @@ This pulse pour technique helps maintain an even extraction by periodically addi
                       {presetDescription ? (
                         <p>{presetDescription}</p>
                       ) : (
-                        <p style={{color: "#999"}}>No recipe details added. Click Edit Description to add equipment and dosing information.</p>
+                        <p style={{ color: '#999' }}>
+                          No recipe details added. Click Edit Description to add equipment and
+                          dosing information.
+                        </p>
                       )}
-                      <button 
-                        className="edit-btn" 
+                      <button
+                        className="edit-btn"
                         onClick={startEditPresetDescription}
                         disabled={isRunning}
                         style={{ marginTop: '10px' }}
@@ -800,6 +1085,111 @@ This pulse pour technique helps maintain an even extraction by periodically addi
               </button>
               <button onClick={handleReset}>Reset</button>
             </div>
+
+            {/* Save Preset Modal */}
+            <Modal
+              isOpen={showSaveModal}
+              onClose={() => setShowSaveModal(false)}
+              title="Save Current Recipe as Preset"
+            >
+              <div>
+                <label htmlFor="preset-name">Preset Name:</label>
+                <input
+                  id="preset-name"
+                  type="text"
+                  className="rename-input"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  placeholder="Enter a name for your preset"
+                />
+                <p style={{ marginTop: '10px' }}>
+                  This will save your current timer configuration including all tick points,
+                  descriptions, and recipe details for future use.
+                </p>
+                <div className="modal-footer">
+                  <button onClick={() => setShowSaveModal(false)}>Cancel</button>
+                  <button className="save-btn" onClick={handleSavePreset}>
+                    Save Preset
+                  </button>
+                </div>
+              </div>
+            </Modal>
+
+            {/* Manage Presets Modal */}
+            <Modal
+              isOpen={showManageModal}
+              onClose={() => {
+                setShowManageModal(false);
+                setRenamingPreset(null);
+              }}
+              title="Manage Saved Presets"
+            >
+              <div>
+                {savedPresets.length === 0 ? (
+                  <p>
+                    You don't have any saved presets yet. Create a timer setup and save it as a
+                    preset.
+                  </p>
+                ) : (
+                  <div className="preset-list">
+                    {savedPresets.map((preset) => (
+                      <div key={preset.name} className="preset-item">
+                        <div className="preset-name">
+                          {renamingPreset === preset.name ? (
+                            <input
+                              type="text"
+                              value={newPresetNameForRename}
+                              onChange={(e) => setNewPresetNameForRename(e.target.value)}
+                              className="rename-input"
+                            />
+                          ) : (
+                            preset.name
+                          )}
+                        </div>
+                        <div className="preset-action-buttons">
+                          {renamingPreset === preset.name ? (
+                            <>
+                              <button className="save-btn" onClick={saveRenamedPreset}>
+                                Save
+                              </button>
+                              <button onClick={() => setRenamingPreset(null)}>Cancel</button>
+                            </>
+                          ) : (
+                            <>
+                              <button className="btn-load" onClick={() => handleLoadPreset(preset)}>
+                                Load
+                              </button>
+                              <button
+                                className="btn-rename"
+                                onClick={() => startRenamePreset(preset)}
+                              >
+                                Rename
+                              </button>
+                              <button
+                                className="delete-btn"
+                                onClick={() => handleDeletePreset(preset.name)}
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="modal-footer">
+                  <button
+                    onClick={() => {
+                      setShowManageModal(false);
+                      setRenamingPreset(null);
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </Modal>
           </div>
         );
       }
